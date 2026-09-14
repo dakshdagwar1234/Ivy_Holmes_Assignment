@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-sans antialiased selection:bg-teal-light selection:text-teal min-h-screen;
+  }
+  h1, h2, h3 {
+    @apply font-serif tracking-tight text-ink;
+  }
+  :focus-visible {
+    outline: 2px solid theme('colors.teal.DEFAULT');
+    outline-offset: 2px;
+  }
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0F766E;
+}
+
+@layer utilities {
+  .price {
+    @apply font-serif tabular-nums tracking-tight text-ochre font-semibold;
+  }
+  .glass-header {
+    background: rgba(11, 30, 25, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .card-gradient-top {
+    background: linear-gradient(180deg, rgba(15, 118, 110, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+}

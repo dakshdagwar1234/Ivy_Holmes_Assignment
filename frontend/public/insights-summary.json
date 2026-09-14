@@ -1,0 +1,85 @@
+{
+  "city": "your city",
+  "total_listings": 4700,
+  "median_price": 12105000,
+  "median_price_per_sqft": 11793,
+  "by_locality": [
+    {
+      "locality": "whitefield",
+      "count": 514,
+      "median_price": 12200000
+    },
+    {
+      "locality": "indiranagar",
+      "count": 507,
+      "median_price": 11890000
+    },
+    {
+      "locality": "sarjapur road",
+      "count": 506,
+      "median_price": 11730000
+    },
+    {
+      "locality": "electronic city",
+      "count": 498,
+      "median_price": 11845000
+    },
+    {
+      "locality": "hsr layout",
+      "count": 469,
+      "median_price": 12740000
+    },
+    {
+      "locality": "hebbal",
+      "count": 464,
+      "median_price": 11910000
+    },
+    {
+      "locality": "yelahanka",
+      "count": 454,
+      "median_price": 12340000
+    },
+    {
+      "locality": "bellandur",
+      "count": 444,
+      "median_price": 12185000
+    },
+    {
+      "locality": "jp nagar",
+      "count": 428,
+      "median_price": 12030000
+    },
+    {
+      "locality": "koramangala",
+      "count": 416,
+      "median_price": 12100000
+    }
+  ],
+  "by_bhk": [
+    {
+      "bedroom": 0,
+      "count": 190
+    },
+    {
+      "bedroom": 1,
+      "count": 395
+    },
+    {
+      "bedroom": 2,
+      "count": 1506
+    },
+    {
+      "bedroom": 3,
+      "count": 1707
+    },
+    {
+      "bedroom": 4,
+      "count": 689
+    },
+    {
+      "bedroom": 5,
+      "count": 213
+    }
+  ],
+  "computed_note": "The documented /v1/analytics/summary endpoint returns 404 on this API — these figures are computed client-side from every retrievable /v1/listings record instead."
+}

@@ -1,0 +1,129 @@
+[
+  {
+    "endpoint": "*",
+    "category": "auth",
+    "documented": "the API key is sent as a query parameter, e.g. GET /v1/listings?api_key=IVY26-XXXX, on every request including login",
+    "actual": "the API rejects a query-param key on /auth/login with 401 and an explicit error telling you to send it as the X-API-Key request header instead",
+    "how_found": "first call the pipeline made (POST /auth/login) failed with a 401 whose detail literally states the correct mechanism",
+    "impact": "high - every single authenticated call in the doc's examples is written the wrong way; nothing works until this is fixed",
+    "evidence": []
+  },
+  {
+    "endpoint": "/auth/login",
+    "category": "auth",
+    "documented": "response is { token, token_type, expires_in, user }, tokens valid for 24 hours (expires_in=86400), no refresh flow exists",
+    "actual": "response is { access_token, refresh_token, token_type, expires_in, refresh_url, user }; expires_in is 900 (15 minutes), and an undocumented POST /auth/refresh endpoint exists",
+    "how_found": "printed the raw login response after the field name mismatch crashed the script",
+    "impact": "high - code written against the documented field name (token) or the documented longer session silently breaks; a real client needs the refresh flow the docs say doesn't exist",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/listings",
+    "category": "pagination",
+    "documented": "pagination uses page/limit query params; response is shaped { total, page, page_size, results }; total is the exact number of matching records",
+    "actual": "page has no effect at all (page=1 and page=2 return identical records); real pagination uses offset/limit and returns { limit, offset, count, total, has_more, results }. Also, total under-reports: paging to has_more=false yields 4700 unique listing_ids (0 duplicates across calls) while total reports 4521",
+    "how_found": "page param produced identical results across calls; switched to offset/limit after inspecting raw response keys, then compared total against the actual count of unique ids collected across every page",
+    "impact": "critical - the documented page param silently returns page 1 forever; separately, total cannot be trusted as the record count for Q1-style questions",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/rentals",
+    "category": "pagination",
+    "documented": "total is the exact number of matching records",
+    "actual": "paging to has_more=false yields 1900 unique listing_ids (0 duplicates across calls) while total reports 1828",
+    "how_found": "same offset-pagination sweep as /v1/listings, compared merged unique count to reported total",
+    "impact": "medium - same under-reporting pattern as listings",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/projects",
+    "category": "pagination",
+    "documented": "total is the exact number of matching records",
+    "actual": "paging to has_more=false yields 520 unique project_ids (0 duplicates across calls) while total reports 500",
+    "how_found": "same offset-pagination sweep, compared merged unique count to reported total",
+    "impact": "medium - same under-reporting pattern",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/analytics/summary",
+    "category": "missing_endpoint",
+    "documented": "returns pre-computed aggregates for the city: total_listings, median_price, median_price_per_sqft, by_locality, by_bhk",
+    "actual": "returns 404 Not Found",
+    "how_found": "called it exactly as documented after the data pull completed",
+    "impact": "high - the insights screen the assignment requires cannot be built from this endpoint as documented; aggregates have to be computed client-side",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/rentals",
+    "category": "units",
+    "documented": "conventions table states area fields are square feet, integer, everywhere in the API (implying consistent field naming too)",
+    "actual": "the super built-up area field is named super_built_up_area on listing records but super_builtup_area (no second underscore) on rental records",
+    "how_found": "printed sample record keys for both endpoints during the pagination debug pass",
+    "impact": "low - naming inconsistency; code written against one spelling silently reads undefined on the other endpoint",
+    "evidence": []
+  },
+  {
+    "endpoint": "/v1/listings",
+    "category": "completeness",
+    "documented": "returns only active listings (inactive/expired/withdrawn excluded server-side); the listing object has no is_live field",
+    "actual": "every record carries an undocumented is_live field, and 978 of 4700 retrievable records have is_live: false",
+    "how_found": "checked field presence and value distribution across all retrievable listings",
+    "impact": "high - directly contradicts the 'safe to show' guarantee in the doc; a naive frontend showing raw results surfaces withdrawn/expired properties",
+    "evidence": [
+      "100-1003403", "100-1004588", "SQU-1000911", "SQU-1003324", "DWE-1000840",
+      "DWE-1000446", "SQU-1004075", "ZER-1002667", "100-1003225", "100-1001969",
+      "DWE-1002253", "ZER-1004606", "100-1003866", "MAG-1000247", "SQU-1002371",
+      "SQU-1003425", "MAG-1003478", "ZER-1003338", "MAG-1000214", "ZER-1004612"
+    ]
+  },
+  {
+    "endpoint": "/v1/projects",
+    "category": "units",
+    "documented": "price_min and price_max are in rupees",
+    "actual": "price_min/price_max are in crores of rupees, not rupees - confirmed by cross-checking against min_area_sqft/max_area_sqft to get a sane rupees-per-sqft figure (roughly 3,000-30,000 for sampled projects only after multiplying by 1e7)",
+    "how_found": "top project by price_max showed a raw value under 100, nonsensical as rupees; area cross-check confirmed the crore hypothesis for 9 of 10 sampled projects",
+    "impact": "high - affects Q7's answer by a factor of 1e7",
+    "evidence": ["P10068"]
+  },
+  {
+    "endpoint": "/v1/projects",
+    "category": "data_quality",
+    "documented": "price_min and price_max describe the project's price range",
+    "actual": "project P10004 has price_max=81.8 (crore) against max_area_sqft=1129 - implying roughly rupees 7.2 lakh per sqft, about 20-40x every other sampled project's rate in the same dataset, using the same 1129 sqft area and 13-tower 34-floor 'new launch' profile that looks otherwise ordinary",
+    "how_found": "cross-checked price_max against area for all sampled projects to confirm the crore unit; P10004 broke the pattern the other 9 confirmed",
+    "impact": "medium - if included as-is, this project could win Q7 on a value that looks corrupt rather than genuinely the priciest",
+    "evidence": ["P10004"]
+  },
+  {
+    "endpoint": "/v1/listings",
+    "category": "fraud",
+    "documented": "no mention of fake or non-genuine listings",
+    "actual": "a subset of listings show a contact number reused across 3+ listings under posted_by:owner (implausible for a genuine single-property owner), where at least half of those listings are also is_verified:false - a pattern consistent with lead-generation listings rather than genuine multi-property owners",
+    "how_found": "cross-referenced contact-reuse frequency against the is_verified field after single-signal thresholds (reuse alone, is_verified alone, round prices, contact prefixes, description duplication) all proved too broad or showed no signal",
+    "impact": "high - affects Q6 (average price) and Q9 directly; unverified reused-contact listings would mislead a user browsing the site",
+    "evidence": [
+      "100-1002951", "SQU-1003620", "100-1003394", "DWE-1001149", "100-1002361",
+      "DWE-1000292", "100-1000755", "SQU-1003246", "ZER-1001502", "100-1002214",
+      "SQU-1003726", "100-1000455", "SQU-1004206", "MAG-1000065", "MAG-1004219",
+      "SQU-1000033", "DWE-1000228", "ZER-1001022", "MAG-1003997", "DWE-1003826"
+    ]
+  },
+  {
+    "endpoint": "/v1/projects",
+    "category": "consistency",
+    "documented": "total_listings is recomputed whenever a listing is added or withdrawn, so it always agrees with what GET /v1/listings?project_id=... returns",
+    "actual": "392 of 520 projects (75%) have a total_listings value that disagrees with the actual count of retrievable listings carrying that project_id",
+    "how_found": "counted listings grouped by project_id and compared against each project's total_listings field",
+    "impact": "high - directly contradicts the doc's explicit 'always agrees' claim for the large majority of projects",
+    "evidence": ["P10001", "P10002", "P10003", "P10004", "P10005", "P10006", "P10007", "P10008", "P10009", "P10011"]
+  },
+  {
+    "endpoint": "/health",
+    "category": "documentation_gap",
+    "documented": "returns service status; no mention of any date field beyond server_time",
+    "actual": "response also includes an undocumented reference_date field (2026-09-10T00:00:00+05:30), distinct from the real server_time - this is the date that time-window questions like 'listings in the last 7 days' are meant to be measured against, not the actual current time",
+    "how_found": "called /health and compared its fields against the documented response shape",
+    "impact": "medium - without noticing this field, a naive implementation of Q8 would use real current time and get a materially different (and wrong) answer",
+    "evidence": []
+  }
+]

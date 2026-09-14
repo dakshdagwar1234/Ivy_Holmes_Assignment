@@ -1,0 +1,12 @@
+{
+  "name": "ivy-assignment-scripts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "fetch": "node scripts/fetch-all.mjs",
+    "analyze": "node scripts/analyze.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
